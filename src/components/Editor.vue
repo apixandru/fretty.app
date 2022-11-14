@@ -154,11 +154,13 @@ export default {
   computed: {
     tuning: function () {
       if (!this.usr_tuning) return [];
-      return this.usr_tuning
+      return (
+        this.usr_tuning
           .trim()
           .split(" ")
           // .map(Note.chroma)
-          .reverse();
+          .reverse()
+      );
     },
     root: function () {
       return Note.chroma(this.scale.tonic);

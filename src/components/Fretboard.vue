@@ -1,5 +1,10 @@
 <template>
-  <svg class="fretboard" :width="width + 150" :height="height + 100" v-if="this.tuning.length > 0">
+  <svg
+    class="fretboard"
+    :width="width + 150"
+    :height="height + 100"
+    v-if="this.tuning.length > 0"
+  >
     <g transform="translate(80, 50)">
       <!-- fret inlays -->
       <polygon
@@ -188,7 +193,6 @@ export default {
       let result = [];
 
       this.tuning.forEach((tuning, string) => {
-
         let hasOctave =
           tuning.endsWith("1") ||
           tuning.endsWith("2") ||
@@ -209,7 +213,8 @@ export default {
                 }),
             }
           : {
-              "note-to-num": (tuning, fret) => (Note.chroma(tuning) + fret) % 12,
+              "note-to-num": (tuning, fret) =>
+                (Note.chroma(tuning) + fret) % 12,
               "num-to-num": (num) => num,
               "num-to-name": (num) => this.toname(num),
             };
