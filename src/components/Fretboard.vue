@@ -1,29 +1,12 @@
 <template>
-  <svg class="fretboard" :width="width + 150" :height="height + 100">
-    <!--
-    <text font-size="11" x="10" y="20" fill="black">TODO: Tuning: E A D G</text>
-    -->
-
+  <svg class="fretboard" :width="width + 150" :height="height + 100" v-if="this.tuning.length > 0">
     <g transform="translate(80, 50)">
-      <!-- Copyright
-      <text
-        font-size="11"
-        :x="width"
-        :y="height + 20"
-        fill="gray"
-        dominant-baseline="hanging"
-        text-anchor="end"
-      >
-        created with fretty.app
-      </text>
-      -->
-
       <!-- fret inlays -->
       <polygon
         v-for="inlay in inlay_polys"
         :key="'inlay_' + inlay.fret"
         :points="inlay.points"
-        style="fill:#eee"
+        style="fill: #eee"
       />
 
       <!-- string lines -->
@@ -103,7 +86,23 @@
         <transition-group name="list" tag="g" appear>
           <g v-for="note in string.visible" :key="note.key">
             <!-- circle -->
+            <rect
+              v-if="note.hasOctave"
+              :x="note.x - 12"
+              :y="string.y - 10"
+              width="24"
+              height="20"
+              :fill="root === note.num ? 'black' : 'white'"
+              stroke="black"
+              stroke-width="0.3"
+              :stroke-dasharray="
+                hover_note === note.num && note.num !== root ? '4,4' : '0'
+              "
+              ry="0"
+              rx="0"
+            />
             <circle
+              v-else
               :cx="note.x"
               :cy="string.y"
               r="10"
@@ -141,7 +140,7 @@
 </template>
 
 <script>
-import { Midi } from "@tonaljs/tonal";
+import { Note, Midi } from "@tonaljs/tonal";
 
 export default {
   name: "Fretboard",
@@ -156,14 +155,14 @@ export default {
       default: () => [],
     },
     inlays: {
-      default: () => [3, 5, 7, 9, 12, 15, 17, 19, 21],
+      default: () => [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
     },
     root: {
       type: Number,
     },
     frets: {
       type: Number,
-      default: 18,
+      default: 25,
     },
     sharps: {
       type: Boolean,
@@ -179,39 +178,68 @@ export default {
   },
 
   computed: {
-    width: function() {
+    width: function () {
       return this.fretpos(this.frets - 1);
     },
-    height: function() {
+    height: function () {
       return (this.tuning.length - 1) * this.string_spacing;
     },
-    strings: function() {
+    strings: function () {
       let result = [];
+
       this.tuning.forEach((tuning, string) => {
+
+        let hasOctave =
+          tuning.endsWith("1") ||
+          tuning.endsWith("2") ||
+          tuning.endsWith("3") ||
+          tuning.endsWith("4") ||
+          tuning.endsWith("5") ||
+          tuning.endsWith("6") ||
+          tuning.endsWith("7");
+
+        const functions = hasOctave
+          ? {
+              "note-to-num": (tuning, fret) => Note.midi(tuning) + fret,
+              "num-to-num": (num) => num % 12,
+              "num-to-name": (num) =>
+                Midi.midiToNoteName(num, {
+                  sharps: true,
+                  pitchClass: !hasOctave,
+                }),
+            }
+          : {
+              "note-to-num": (tuning, fret) => (Note.chroma(tuning) + fret) % 12,
+              "num-to-num": (num) => num,
+              "num-to-name": (num) => this.toname(num),
+            };
+
         // find notes
         let normalized_notes = this.normalize(this.notes);
         let visible = [];
         let hidden = [];
         for (let fret = 0; fret < this.frets; fret++) {
-          let num = (tuning + fret) % 12;
+          let num = functions["note-to-num"](tuning, fret);
+          let numNum = functions["num-to-num"](num);
           let note = {
-            num: num,
+            hasOctave: hasOctave,
+            num: numNum,
             fret: fret,
-            name: this.toname(num),
+            name: functions["num-to-name"](num),
             x: (this.fretpos(fret - 1) + this.fretpos(fret)) / 2,
             key: "n" + string + "_" + fret,
           };
-          if (normalized_notes.includes(num)) {
+          if (normalized_notes.includes(numNum)) {
             visible.push(note);
           } else {
             hidden.push(note);
           }
         }
-        if (tuning != undefined) {
+        if (tuning !== undefined) {
           result.push({
             nr: string,
             y: string * this.string_spacing,
-            tuning: this.toname(tuning),
+            tuning: tuning,
             visible: visible,
             hidden: hidden,
           });
@@ -219,7 +247,7 @@ export default {
       });
       return result;
     },
-    fret_lines: function() {
+    fret_lines: function () {
       let lines = [];
       for (let i = 1; i < this.frets; i++) {
         lines.push({
@@ -233,7 +261,7 @@ export default {
         lines: lines,
       };
     },
-    inlay_polys: function() {
+    inlay_polys: function () {
       let result = [];
       if (!this.tuning.length) return result;
       for (let fret of this.inlays) {
@@ -288,16 +316,20 @@ export default {
   },
 
   methods: {
-    fretpos(n) {
+    fretpos(fretNumber) {
       // https://www.liutaiomottola.com/formulae/fret.htm
-      if (n <= 20) {
-        const s = 1300;
-        let d = s - s / Math.pow(2, n / 12);
-        return Math.round(d * 1000) / 1000;
+      if (fretNumber <= 20) {
+        const scaleLength = 2200;
+        // const scaleLength = 1300;
+        // let weirdStuff = 1000;
+        let weirdStuff = scaleLength * 0.77;
+        let distanceFromNut =
+          scaleLength - scaleLength / Math.pow(2, fretNumber / 12);
+        return Math.round(distanceFromNut * weirdStuff) / weirdStuff;
       } else {
         let p19 = this.fretpos(19);
         let p20 = this.fretpos(20);
-        return p20 + (p20 - p19) * (n - 20);
+        return p20 + (p20 - p19) * (fretNumber - 20);
       }
     },
     toname(x) {

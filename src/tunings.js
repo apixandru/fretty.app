@@ -3,7 +3,7 @@ export const Tunings = Object.freeze(
     {
       instrument: "Guitar (6-String)",
       tunings: [
-        { name: "Standard", tuning: "E A D G B E" },
+        { name: "Standard", tuning: "E A D G B E", exact: "E2 A2 D3 G3 B3 E4" },
         { name: "Drop D", tuning: "D A D G B E" },
         { name: "Half Step Down", tuning: "D# G# C# F# A# D#" },
         { name: "Full Step Down", tuning: "D G C F A D" },

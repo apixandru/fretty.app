@@ -1,8 +1,8 @@
 <template>
-  <section class="section">
-    <div class="container" v-for="editor in editors" v-bind:key="editor">
+  <section class="section" style="padding:0">
+    <div class="container" v-for="editor in editors" v-bind:key="editor" style="max-width: 100%">
       <!--<note-select />-->
-      <Editor v-on:remove-fretboard="remove(editor)" />
+      <Editor v-on:remove-fretboard="remove(editor)"/>
     </div>
     <div class="container has-text-centered">
       <a @click="add">+ Add fretboard</a>
@@ -26,10 +26,10 @@ export default {
     };
   },
   methods: {
-    add: function() {
+    add: function () {
       this.editors.push(Math.max(...this.editors) + 1);
     },
-    remove: function(editor) {
+    remove: function (editor) {
       const index = this.editors.indexOf(editor);
       if (index > -1) {
         this.editors.splice(index, 1);

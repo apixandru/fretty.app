@@ -119,9 +119,9 @@ export default {
 
   data: function() {
     return {
-      usr_tuning: "E A D G",
+      usr_tuning: "E2 A2 D3 G3 B3 E4",
       sharps: "sharps",
-      frets: 18,
+      frets: 25,
       scale: { tonic: "A", type: "minor pentatonic" },
       all_scales: Scale.names(),
     };
@@ -129,10 +129,11 @@ export default {
 
   computed: {
     tuning: function() {
+      console.log(this.usr_tuning)
       return this.usr_tuning
         .trim()
         .split(" ")
-        .map(Note.chroma)
+        // .map(Note.chroma)
         .reverse();
     },
     notes: function() {
