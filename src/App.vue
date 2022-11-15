@@ -3,11 +3,11 @@
     <div
       class="container"
       v-for="editor in editors"
-      v-bind:key="editor"
+      v-bind:key="editor.id"
       style="max-width: 100%"
     >
       <!--<note-select />-->
-      <Editor v-on:remove-fretboard="remove(editor)" />
+      <Editor :initial="editor.tuning" v-on:remove-fretboard="remove(editor.id)" />
     </div>
     <div class="container has-text-centered">
       <a @click="add">+ Add fretboard</a>
@@ -27,15 +27,31 @@ export default {
   },
   data() {
     return {
-      editors: [1],
+      editors: [
+        {
+          id: 1,
+          tuning: "E2 A2 D3 G3 B3 E4",
+        },
+        {
+          id: 2,
+          tuning: "E A D G B E",
+        },
+      ],
     };
   },
   methods: {
     add: function () {
-      this.editors.push(Math.max(...this.editors) + 1);
+      this.editors.push({
+        id: Math.max(...this.editors.map((e) => e.id)) + 1,
+        tuning: "E A D G B E",
+      });
     },
     remove: function (editor) {
-      const index = this.editors.indexOf(editor);
+      let editors = this.editors.filter(e => e.id === editor);
+      if (editors.length !== 1) {
+        return;
+      }
+      const index = this.editors.indexOf(editors[0]);
       if (index > -1) {
         this.editors.splice(index, 1);
       }
