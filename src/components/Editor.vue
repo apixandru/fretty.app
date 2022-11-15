@@ -164,7 +164,7 @@ export default {
       usr_tuning: this.initial,
       sharps: "sharps",
       frets: 25,
-      fretboardLen: 2180,
+      fretboardLen: 2200,
       scale: { tonic: "A", type: "minor pentatonic" },
     };
   },

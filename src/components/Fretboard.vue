@@ -182,8 +182,7 @@ export default {
       default: 25,
     },
     baseLength: {
-      type: Number,
-      default: 2180,
+      type: Number
     },
     sharps: {
       type: Boolean,
