@@ -54,10 +54,9 @@
         <!-- hidden notes -->
         <g v-for="note in string.hidden" :key="note.key">
           <transition name="fade">
-            <g v-show="hover_note % 12 === note.midiKey % 12">
+            <g v-show="hover_note % 12 === note.midiKey % 12 && note.midiKey">
               <!-- circle -->
               <rect
-                v-if="note.hasOctave"
                 :x="note.x - 15"
                 :y="string.y - 10"
                 width="30"
@@ -68,16 +67,6 @@
                 :stroke-dasharray="getDashArray(note)"
                 ry="0"
                 rx="0"
-              />
-              <circle
-                v-else
-                :cx="note.x"
-                :cy="string.y"
-                r="10"
-                stroke-width="1"
-                :stroke-dasharray="getDashArray(note)"
-                :fill="getFillColor(note)"
-                stroke="black"
               />
               <!-- name -->
               <text
@@ -94,6 +83,7 @@
             </g>
           </transition>
           <circle
+            v-show="note.midiKey"
             @mouseleave="onHoverLeave()"
             @mouseover="onHoverEnter(note)"
             r="10"
@@ -108,7 +98,6 @@
           <g v-for="note in string.visible" :key="note.key">
             <!-- circle -->
             <rect
-              v-if="note.hasOctave"
               :x="note.x - 15"
               :y="string.y - 10"
               width="30"
@@ -119,15 +108,6 @@
               :stroke-dasharray="getDashArray(note)"
               ry="0"
               rx="0"
-            />
-            <circle
-              v-else
-              :cx="note.x"
-              :cy="string.y"
-              r="10"
-              :stroke-dasharray="getDashArray(note)"
-              :fill="getFillColor(note)"
-              stroke="black"
             />
             <!-- name -->
             <text
@@ -182,7 +162,10 @@ export default {
       default: 25,
     },
     baseLength: {
-      type: Number
+      type: Number,
+    },
+    includeOctaves: {
+      type: String,
     },
     sharps: {
       type: Boolean,
@@ -208,30 +191,28 @@ export default {
       let result = [];
 
       this.tuning.forEach((tuning, string) => {
-        let hasOctave =
-          tuning.endsWith("1") ||
-          tuning.endsWith("2") ||
-          tuning.endsWith("3") ||
-          tuning.endsWith("4") ||
-          tuning.endsWith("5") ||
-          tuning.endsWith("6") ||
-          tuning.endsWith("7");
+        let hasOctave = this.includeOctaves === "true";
+        if (hasOctave) {
+          hasOctave =
+            tuning.endsWith("0") ||
+            tuning.endsWith("1") ||
+            tuning.endsWith("2") ||
+            tuning.endsWith("3") ||
+            tuning.endsWith("4") ||
+            tuning.endsWith("5") ||
+            tuning.endsWith("6") ||
+            tuning.endsWith("7");
+        }
 
         const functions = hasOctave
           ? {
               "note-to-num": (tuning, fret) => Note.midi(tuning) + fret,
               "num-to-num": (num) => num % 12,
-              "num-to-name": (num) =>
-                Midi.midiToNoteName(num, {
-                  sharps: true,
-                  pitchClass: !hasOctave,
-                }),
             }
           : {
               "note-to-num": (tuning, fret) =>
                 (Note.chroma(tuning) + fret) % 12,
               "num-to-num": (num) => num,
-              "num-to-name": (num) => this.toname(num),
             };
 
         // find notes
@@ -246,7 +227,7 @@ export default {
             midiKey: Midi.toMidi(num),
             num: numNum,
             fret: fret,
-            name: functions["num-to-name"](num),
+            name: this.toname(num, hasOctave),
             x: (this.fretpos(fret - 1) + this.fretpos(fret)) / 2,
             key: "n" + string + "_" + fret,
           };
@@ -277,8 +258,8 @@ export default {
         });
       }
       return {
-        y1: this.height == 0 ? -this.string_spacing / 4 : 0,
-        y2: this.height == 0 ? this.string_spacing / 4 : this.height,
+        y1: this.height === 0 ? -this.string_spacing / 4 : 0,
+        y2: this.height === 0 ? this.string_spacing / 4 : this.height,
         lines: lines,
       };
     },
@@ -306,7 +287,7 @@ export default {
         const nright = nleft + width * resize_x;
 
         let points;
-        if (fret == 12) {
+        if (fret === 12 || fret === 24) {
           points = [
             [nleft, top],
             [nright, top],
@@ -359,7 +340,10 @@ export default {
       }
     },
     getFillColor(note) {
-      if (this.hover_note === -1 && this.root === note.num || this.hover_note === note.midiKey) {
+      if (
+        (this.hover_note === -1 && this.root === note.num) ||
+        this.hover_note === note.midiKey
+      ) {
         return "black";
       } else if (this.hover_note % 12 === note.midiKey % 12) {
         return "lightgray";
@@ -367,7 +351,10 @@ export default {
       return "white";
     },
     getTextColor(note) {
-      if (this.hover_note === -1 && this.root === note.num || this.hover_note === note.midiKey) {
+      if (
+        (this.hover_note === -1 && this.root === note.num) ||
+        this.hover_note === note.midiKey
+      ) {
         return "white";
       }
       return "black";
@@ -379,7 +366,11 @@ export default {
       this.hover_note = -1;
     },
     getFontWeight(note) {
-      if (this.hover_note === -1 && this.root === note.num || this.hover_note === note.midiKey || this.hover_note % 12 === note.midiKey % 12) {
+      if (
+        (this.hover_note === -1 && this.root === note.num) ||
+        this.hover_note === note.midiKey ||
+        this.hover_note % 12 === note.midiKey % 12
+      ) {
         return "bold";
       }
       return this.hover_note === note.num ? "bold" : "normal";
@@ -389,10 +380,10 @@ export default {
         ? "4,4"
         : "0";
     },
-    toname(x) {
+    toname(x, hasOctave) {
       return Midi.midiToNoteName(x, {
         sharps: this.sharps,
-        pitchClass: true,
+        pitchClass: !hasOctave,
       });
     },
     normalize(notes) {

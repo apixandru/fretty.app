@@ -92,6 +92,23 @@
                             </b-radio-button>
                           </b-field>
                         </b-field>
+                        <b-field label="Octaves">
+                          <b-field>
+                            <b-radio-button
+                              v-model="includeOctaves"
+                              native-value="true"
+                            >
+                              <span>Yes</span>
+                            </b-radio-button>
+
+                            <b-radio-button
+                              v-model="includeOctaves"
+                              native-value="false"
+                            >
+                              <span>No</span>
+                            </b-radio-button>
+                          </b-field>
+                        </b-field>
                         <b-field label="Fretboard Len">
                           <b-numberinput
                             controls-position="compact"
@@ -126,6 +143,7 @@
           :notes="notes"
           :sharps="sharps"
           :base-length="fretboardLen"
+          :include-octaves="includeOctaves"
           :frets="frets"
           :root="root"
         />
@@ -151,7 +169,9 @@ export default {
   props: {
     initial: {
       type: String,
-      default: () => "",
+    },
+    octaves: {
+      type: String,
     },
   },
 
@@ -163,6 +183,7 @@ export default {
     return {
       usr_tuning: this.initial,
       sharps: "sharps",
+      includeOctaves: this.octaves,
       frets: 25,
       fretboardLen: 2200,
       scale: { tonic: "A", type: "minor pentatonic" },
@@ -172,13 +193,12 @@ export default {
   computed: {
     tuning: function () {
       if (!this.usr_tuning) return [];
-      return (
-        this.usr_tuning
-          .trim()
-          .split(" ")
-          // .map(Note.chroma)
-          .reverse()
+
+      let exactTuning = Tunings.flatMap((t) => t.tunings).find(
+        (tuning) => tuning.tuning === this.usr_tuning
       );
+
+      return (exactTuning?.full || this.usr_tuning).trim().split(" ").reverse();
     },
     root: function () {
       return Note.chroma(this.scale.tonic);
@@ -206,7 +226,8 @@ export default {
         const items = element.tunings.filter(
           (item) =>
             item.tuning.toLowerCase().indexOf(this.usr_tuning.toLowerCase()) >=
-            0
+              0 ||
+            item.full?.toLowerCase().indexOf(this.usr_tuning.toLowerCase()) >= 0
         );
         if (items.length) {
           newData.push({ instrument: element.instrument, tunings: items });

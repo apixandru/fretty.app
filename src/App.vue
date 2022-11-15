@@ -6,8 +6,11 @@
       v-bind:key="editor.id"
       style="max-width: 100%"
     >
-      <!--<note-select />-->
-      <Editor :initial="editor.tuning" v-on:remove-fretboard="remove(editor.id)" />
+      <Editor
+        :initial="editor.tuning"
+        :octaves="editor.octaves"
+        v-on:remove-fretboard="remove(editor.id)"
+      />
     </div>
     <div class="container has-text-centered">
       <a @click="add">+ Add fretboard</a>
@@ -17,6 +20,8 @@
 
 <script>
 import Editor from "./components/Editor.vue";
+
+const defaultTuning = "E A D G B E";
 
 export default {
   name: "App",
@@ -28,11 +33,13 @@ export default {
       editors: [
         {
           id: 1,
-          tuning: "E2 A2 D3 G3 B3 E4",
+          tuning: defaultTuning,
+          octaves: "true",
         },
         {
           id: 2,
-          tuning: "E A D G B E",
+          tuning: defaultTuning,
+          octaves: "false",
         },
       ],
     };
@@ -41,11 +48,12 @@ export default {
     add: function () {
       this.editors.push({
         id: Math.max(...this.editors.map((e) => e.id)) + 1,
-        tuning: "E A D G B E",
+        tuning: defaultTuning,
+        octaves: "true",
       });
     },
     remove: function (editor) {
-      let editors = this.editors.filter(e => e.id === editor);
+      let editors = this.editors.filter((e) => e.id === editor);
       if (editors.length !== 1) {
         return;
       }
