@@ -92,6 +92,15 @@
                             </b-radio-button>
                           </b-field>
                         </b-field>
+                        <b-field label="Fretboard Len">
+                          <b-numberinput
+                            controls-position="compact"
+                            v-model.number="fretboardLen"
+                            min="1000"
+                            max="9000"
+                            step="10"
+                          ></b-numberinput>
+                        </b-field>
                         <!-- <b-checkbox>Show piano</b-checkbox>-->
                       </section>
                       <footer class="modal-card-foot">
@@ -116,6 +125,7 @@
           :tuning="tuning"
           :notes="notes"
           :sharps="sharps"
+          :base-length="fretboardLen"
           :frets="frets"
           :root="root"
         />
@@ -154,6 +164,7 @@ export default {
       usr_tuning: this.initial,
       sharps: "sharps",
       frets: 25,
+      fretboardLen: 2180,
       scale: { tonic: "A", type: "minor pentatonic" },
     };
   },

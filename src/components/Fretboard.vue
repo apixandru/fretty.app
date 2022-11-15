@@ -54,23 +54,39 @@
         <!-- hidden notes -->
         <g v-for="note in string.hidden" :key="note.key">
           <transition name="fade">
-            <g v-show="note.num == hover_note">
+            <g v-show="hover_note % 12 === note.midiKey % 12">
               <!-- circle -->
+              <rect
+                v-if="note.hasOctave"
+                :x="note.x - 15"
+                :y="string.y - 10"
+                width="30"
+                height="20"
+                :fill="getFillColor(note)"
+                stroke="black"
+                stroke-width="0.3"
+                :stroke-dasharray="getDashArray(note)"
+                ry="0"
+                rx="0"
+              />
               <circle
+                v-else
                 :cx="note.x"
                 :cy="string.y"
                 r="10"
                 stroke-width="1"
-                fill="white"
-                stroke="white"
+                :stroke-dasharray="getDashArray(note)"
+                :fill="getFillColor(note)"
+                stroke="black"
               />
               <!-- name -->
               <text
                 font-size="11"
                 :x="note.x"
                 :y="string.y"
+                :font-weight="getFontWeight(note)"
                 dominant-baseline="central"
-                fill="black"
+                :fill="getTextColor(note)"
                 text-anchor="middle"
               >
                 {{ note.name }}
@@ -78,8 +94,8 @@
             </g>
           </transition>
           <circle
-            @mouseleave="hover_note = -1"
-            @mouseover="hover_note = note.num"
+            @mouseleave="onHoverLeave()"
+            @mouseover="onHoverEnter(note)"
             r="10"
             :cx="note.x"
             :cy="string.y"
@@ -93,16 +109,14 @@
             <!-- circle -->
             <rect
               v-if="note.hasOctave"
-              :x="note.x - 12"
+              :x="note.x - 15"
               :y="string.y - 10"
-              width="24"
+              width="30"
               height="20"
-              :fill="root === note.num ? 'black' : 'white'"
+              :fill="getFillColor(note)"
               stroke="black"
               stroke-width="0.3"
-              :stroke-dasharray="
-                hover_note === note.num && note.num !== root ? '4,4' : '0'
-              "
+              :stroke-dasharray="getDashArray(note)"
               ry="0"
               rx="0"
             />
@@ -111,10 +125,8 @@
               :cx="note.x"
               :cy="string.y"
               r="10"
-              :stroke-dasharray="
-                hover_note == note.num && note.num != root ? '4,4' : '0'
-              "
-              :fill="root == note.num ? 'black' : 'white'"
+              :stroke-dasharray="getDashArray(note)"
+              :fill="getFillColor(note)"
               stroke="black"
             />
             <!-- name -->
@@ -123,15 +135,15 @@
               :x="note.x"
               :y="string.y"
               dominant-baseline="central"
-              :fill="root == note.num ? 'white' : 'black'"
-              :font-weight="root == note.num ? 'bold' : 'normal'"
+              :fill="getTextColor(note)"
+              :font-weight="getFontWeight(note)"
               text-anchor="middle"
             >
               {{ note.name }}
             </text>
             <circle
-              @mouseleave="hover_note = -1"
-              @mouseover="hover_note = note.num"
+              @mouseleave="onHoverLeave()"
+              @mouseover="onHoverEnter(note)"
               r="10"
               :cx="note.x"
               :cy="string.y"
@@ -168,6 +180,10 @@ export default {
     frets: {
       type: Number,
       default: 25,
+    },
+    baseLength: {
+      type: Number,
+      default: 2180,
     },
     sharps: {
       type: Boolean,
@@ -228,6 +244,7 @@ export default {
           let numNum = functions["num-to-num"](num);
           let note = {
             hasOctave: hasOctave,
+            midiKey: Midi.toMidi(num),
             num: numNum,
             fret: fret,
             name: functions["num-to-name"](num),
@@ -324,18 +341,54 @@ export default {
     fretpos(fretNumber) {
       // https://www.liutaiomottola.com/formulae/fret.htm
       if (fretNumber <= 20) {
-        const scaleLength = 2200;
+        const scaleLength = this.baseLength;
         // const scaleLength = 1300;
         // let weirdStuff = 1000;
         let weirdStuff = scaleLength * 0.77;
         let distanceFromNut =
           scaleLength - scaleLength / Math.pow(2, fretNumber / 12);
-        return Math.round(distanceFromNut * weirdStuff) / weirdStuff;
+
+        let distance = Math.round(distanceFromNut * weirdStuff) / weirdStuff;
+        if (fretNumber === -1) {
+          distance += 50;
+        }
+        return distance;
       } else {
         let p19 = this.fretpos(19);
         let p20 = this.fretpos(20);
         return p20 + (p20 - p19) * (fretNumber - 20);
       }
+    },
+    getFillColor(note) {
+      if (this.hover_note === -1 && this.root === note.num || this.hover_note === note.midiKey) {
+        return "black";
+      } else if (this.hover_note % 12 === note.midiKey % 12) {
+        return "lightgray";
+      }
+      return "white";
+    },
+    getTextColor(note) {
+      if (this.hover_note === -1 && this.root === note.num || this.hover_note === note.midiKey) {
+        return "white";
+      }
+      return "black";
+    },
+    onHoverEnter(note) {
+      this.hover_note = note.midiKey;
+    },
+    onHoverLeave() {
+      this.hover_note = -1;
+    },
+    getFontWeight(note) {
+      if (this.hover_note === -1 && this.root === note.num || this.hover_note === note.midiKey || this.hover_note % 12 === note.midiKey % 12) {
+        return "bold";
+      }
+      return this.hover_note === note.num ? "bold" : "normal";
+    },
+    getDashArray(note) {
+      return this.hover_note === note.num && note.num !== this.root
+        ? "4,4"
+        : "0";
     },
     toname(x) {
       return Midi.midiToNoteName(x, {
